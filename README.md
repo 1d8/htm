@@ -1,2 +1,1 @@
-# htm
-Hacking The Matrix project resources.
+# Hacking The Matrix (HTM) Resources
