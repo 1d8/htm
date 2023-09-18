@@ -1,0 +1,59 @@
+---
+- name: "install & config FTP server for HTM"
+  hosts: localhost
+  become: yes
+  
+  tasks:
+   - name: Add "ciso" user
+     user:
+       name: ciso
+       password: "{{ 'root' | password_hash('sha512') }}"
+       createhome: yes
+       state: present
+    
+   - name: Install vsftpd package
+     apt:
+      name: vsftpd
+      state: present
+      
+   - name: enable & run vsftpd service
+     systemd:
+        name: vsftpd
+        enabled: yes
+        state: started
+
+   - name:  Modify FTP config, allow anonymous connections
+     lineinfile:
+       path: /etc/vsftpd.conf
+       regexp: '^(.*)anonymous_enable=NO(.*)$'
+       line: "anonymous_enable=YES"
+       backrefs: yes
+       state: present
+       backup: no
+     notify:
+       - restart vsftpd
+        
+   - name: Add MOTD banner
+     lineinfile:
+       path: /etc/vsftpd.conf
+       regexp: '^(.*)#ftpd_banner=(.*)$'
+       line: "ftpd_banner=WELCOME TO THE CISO COMMUNITY FTP SERVER. Where secret lore of the club is stored"
+       state: present
+       backup: no
+     notify:
+       - restart vsftpd
+
+   - name: Drop flag file in CISO user's home directory
+     ansible.builtin.copy:
+       content: |
+         {c150_l0r3_p13c3_c4p7ur3d_p71}
+       dest: "/home/ciso/flag.txt"
+       owner: ciso
+       group: ciso
+       mode: '0644'
+
+  handlers:
+    - name: restart vsftpd
+      service:
+        name: vsftpd
+        state: restarted
